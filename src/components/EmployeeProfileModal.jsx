@@ -685,7 +685,10 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdateEmploy
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium">
                     <tr>
-                      <td className="py-2.5 px-4 font-bold text-slate-800">Basic Salary</td>
+                      <td className="py-2.5 px-4">
+                        <div className="font-bold text-slate-800">Basic Salary</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Define Basic salary from company cost compute it based on monthly Wages</div>
+                      </td>
                       <td className="py-2.5 px-4 text-slate-500">
                         {isEditing ? (
                           <div className="flex items-center gap-1">
@@ -704,7 +707,10 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdateEmploy
                       <td className="py-2.5 px-4 text-right font-bold text-slate-900">₹{basic.toLocaleString()}</td>
                     </tr>
                     <tr>
-                      <td className="py-2.5 px-4 font-bold text-slate-800">House Rent Allowance (HRA)</td>
+                      <td className="py-2.5 px-4">
+                        <div className="font-bold text-slate-800">House Rent Allowance (HRA)</div>
+                        <div className="text-[10px] text-slate-400 font-normal">HRA provided to employees 50% of the basic salary</div>
+                      </td>
                       <td className="py-2.5 px-4 text-slate-500">
                         {isEditing ? (
                           <div className="flex items-center gap-1">
@@ -723,22 +729,34 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdateEmploy
                       <td className="py-2.5 px-4 text-right font-bold text-slate-900">₹{hra.toLocaleString()}</td>
                     </tr>
                     <tr>
-                      <td className="py-2.5 px-4 font-bold text-slate-800">Standard Allowance</td>
+                      <td className="py-2.5 px-4">
+                        <div className="font-bold text-slate-800">Standard Allowance</div>
+                        <div className="text-[10px] text-slate-400 font-normal">A predetermined, fixed amount provided to employee as part of salary</div>
+                      </td>
                       <td className="py-2.5 px-4 text-slate-500">16.67% of Wage</td>
                       <td className="py-2.5 px-4 text-right font-bold text-slate-900">₹{stdAllowance.toLocaleString()}</td>
                     </tr>
                     <tr>
-                      <td className="py-2.5 px-4 font-bold text-slate-800">Performance Bonus</td>
+                      <td className="py-2.5 px-4">
+                        <div className="font-bold text-slate-800">Performance Bonus</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Variable amount paid during payroll; calculated as % of basic salary</div>
+                      </td>
                       <td className="py-2.5 px-4 text-slate-500">8.33% of Basic Salary</td>
                       <td className="py-2.5 px-4 text-right font-bold text-slate-900">₹{bonus.toLocaleString()}</td>
                     </tr>
                     <tr>
-                      <td className="py-2.5 px-4 font-bold text-slate-800">Leave Travel Allowance (LTA)</td>
+                      <td className="py-2.5 px-4">
+                        <div className="font-bold text-slate-800">Leave Travel Allowance (LTA)</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Paid by company for travel expenses; calculated as % of basic salary</div>
+                      </td>
                       <td className="py-2.5 px-4 text-slate-500">8.33% of Basic Salary</td>
                       <td className="py-2.5 px-4 text-right font-bold text-slate-900">₹{lta.toLocaleString()}</td>
                     </tr>
                     <tr>
-                      <td className="py-2.5 px-4 font-bold text-slate-800">Fixed Allowance</td>
+                      <td className="py-2.5 px-4">
+                        <div className="font-bold text-slate-800">Fixed Allowance</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Portion of wages determined after calculating all salary components</div>
+                      </td>
                       <td className="py-2.5 px-4 text-slate-500">Remainder (Wage − Components)</td>
                       <td className="py-2.5 px-4 text-right font-bold text-slate-900">₹{fixedAllowance.toLocaleString()}</td>
                     </tr>

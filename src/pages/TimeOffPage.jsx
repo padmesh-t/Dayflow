@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { 
-  CalendarDays, Plus, CheckCircle, XCircle, Clock, Calendar as CalendarIcon, Filter, Check, X, Shield
+  CalendarDays, Plus, CheckCircle, XCircle, Clock, Calendar as CalendarIcon, Filter, Check, X, Shield, Search
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import TimeOffModal from '../components/TimeOffModal';
 
 export default function TimeOffPage() {
-  const { timeOffRequests, updateTimeOffStatus, fetchTimeOff, fetchEmployees } = useData();
+  const { timeOffRequests, updateTimeOffStatus, fetchTimeOff, fetchEmployees, employees } = useData();
   const { currentUser, isHROfficer } = useAuth();
   
   const [showModal, setShowModal] = useState(false);
+  const [adminSubTab, setAdminSubTab] = useState('timeoff'); // 'timeoff' or 'allocation'
+  const [searchQuery, setSearchQuery] = useState('');
   const [msg, setMsg] = useState('');
 
   const publicHolidays = [
@@ -95,76 +97,153 @@ export default function TimeOffPage() {
         </div>
       </div>
 
-      {/* ADMIN & HR OFFICER APPROVAL TABLE */}
+      {/* ADMIN & HR OFFICER APPROVAL & ALLOCATION SECTION */}
       {isHROfficer && (
         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
-          <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-            <h3 className="font-bold text-slate-900 text-sm flex items-center space-x-2">
-              <Shield className="h-4 w-4 text-indigo-600" />
-              <span>Admin & HR Time Off Approval Portal</span>
-            </h3>
-            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-xl">
-              {timeOffRequests.filter(r => r.status === 'Pending').length} Pending Approvals
-            </span>
+          
+          {/* Sub-Tabs: Time Off | Allocation */}
+          <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div className="flex items-center space-x-2 bg-slate-200/70 p-1 rounded-xl">
+              <button
+                onClick={() => setAdminSubTab('timeoff')}
+                className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  adminSubTab === 'timeoff' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <CalendarDays className="h-3.5 w-3.5" />
+                <span>Time Off Requests</span>
+              </button>
+              <button
+                onClick={() => setAdminSubTab('allocation')}
+                className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  adminSubTab === 'allocation' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Shield className="h-3.5 w-3.5" />
+                <span>Allocation Management</span>
+              </button>
+            </div>
+
+            <div className="flex items-center space-x-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search employee..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
+                />
+              </div>
+              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1.5 rounded-xl shrink-0">
+                {timeOffRequests.filter(r => r.status === 'Pending').length} Pending
+              </span>
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-600">
-              <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-200 tracking-wider">
-                <tr>
-                  <th className="py-3 px-4">Employee</th>
-                  <th className="py-3 px-4">Start Date</th>
-                  <th className="py-3 px-4">End Date</th>
-                  <th className="py-3 px-4">Time Off Type</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Approve / Reject Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium text-xs">
-                {timeOffRequests.map(req => (
-                  <tr key={req.id} className="hover:bg-slate-50/60 transition">
-                    <td className="py-3.5 px-4 font-bold text-slate-900">
-                      {req.employee_name || req.empName || 'Employee'}
-                    </td>
-                    <td className="py-3.5 px-4 font-mono font-semibold">{req.start_date || req.startDate}</td>
-                    <td className="py-3.5 px-4 font-mono font-semibold">{req.end_date || req.endDate}</td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-800">{req.time_off_type || req.timeOffType}</td>
-                    <td className="py-3.5 px-4">
-                      <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full font-bold text-[11px] ${
-                        req.status === 'Validated' || req.status === 'Approved' ? 'bg-emerald-50 text-emerald-700' :
-                        req.status === 'Refused' || req.status === 'Rejected' ? 'bg-rose-50 text-rose-700' :
-                        'bg-amber-50 text-amber-700'
-                      }`}>
-                        <span>{req.status === 'Validated' ? 'Validated (Approved)' : req.status === 'Refused' ? 'Refused (Rejected)' : 'Pending Approval'}</span>
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      {req.status === 'Pending' ? (
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => handleReject(req.id)}
-                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition cursor-pointer"
-                            title="Reject ❌"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleApprove(req.id)}
-                            className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-xl transition cursor-pointer"
-                            title="Approve ✅"
-                          >
-                            <Check className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-slate-400 font-semibold">Action Resolved</span>
-                      )}
-                    </td>
+          {/* SUB-TAB 1: TIME OFF REQUESTS APPROVAL TABLE */}
+          {adminSubTab === 'timeoff' && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-600">
+                <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-200 tracking-wider">
+                  <tr>
+                    <th className="py-3 px-4">Employee</th>
+                    <th className="py-3 px-4">Start Date</th>
+                    <th className="py-3 px-4">End Date</th>
+                    <th className="py-3 px-4">Time Off Type</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-right">Approve / Reject Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-xs">
+                  {timeOffRequests
+                    .filter(r => !searchQuery || (r.employee_name || r.empName || '').toLowerCase().includes(searchQuery.toLowerCase()))
+                    .map(req => (
+                    <tr key={req.id} className="hover:bg-slate-50/60 transition">
+                      <td className="py-3.5 px-4 font-bold text-slate-900">
+                        {req.employee_name || req.empName || 'Employee'}
+                      </td>
+                      <td className="py-3.5 px-4 font-mono font-semibold">{req.start_date || req.startDate}</td>
+                      <td className="py-3.5 px-4 font-mono font-semibold">{req.end_date || req.endDate}</td>
+                      <td className="py-3.5 px-4 font-semibold text-slate-800">{req.time_off_type || req.timeOffType}</td>
+                      <td className="py-3.5 px-4">
+                        <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full font-bold text-[11px] ${
+                          req.status === 'Validated' || req.status === 'Approved' ? 'bg-emerald-50 text-emerald-700' :
+                          req.status === 'Refused' || req.status === 'Rejected' ? 'bg-rose-50 text-rose-700' :
+                          'bg-amber-50 text-amber-700'
+                        }`}>
+                          <span>{req.status === 'Validated' ? 'Validated (Approved)' : req.status === 'Refused' ? 'Refused (Rejected)' : 'Pending Approval'}</span>
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        {req.status === 'Pending' ? (
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => handleReject(req.id)}
+                              className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition cursor-pointer"
+                              title="Reject ❌"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleApprove(req.id)}
+                              className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-xl transition cursor-pointer"
+                              title="Approve ✅"
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 font-semibold">Action Resolved</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* SUB-TAB 2: ALLOCATION MANAGEMENT TABLE */}
+          {adminSubTab === 'allocation' && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-600">
+                <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-200 tracking-wider">
+                  <tr>
+                    <th className="py-3 px-4">Employee</th>
+                    <th className="py-3 px-4">Paid Leave Balance</th>
+                    <th className="py-3 px-4">Sick Leave Balance</th>
+                    <th className="py-3 px-4">Used Leaves This Year</th>
+                    <th className="py-3 px-4 text-right">Total Available</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-xs">
+                  {employees
+                    .filter(e => !searchQuery || e.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .map(emp => {
+                      const usedPaid = timeOffRequests.filter(r => (r.employee_id === emp.id || r.empId === emp.id) && (r.status === 'Validated' || r.status === 'Approved')).reduce((acc, curr) => acc + (curr.allocation_days || 1), 0);
+                      const paidBal = emp.paid_leave_balance ?? 24;
+                      const sickBal = emp.sick_leave_balance ?? 7;
+                      return (
+                        <tr key={emp.id} className="hover:bg-slate-50/60 transition">
+                          <td className="py-3.5 px-4 font-bold text-slate-900">
+                            {emp.name}
+                            <span className="block text-[11px] font-normal text-slate-400">{emp.department} • {emp.login_id || emp.loginId}</span>
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-indigo-600">{paidBal} Days</td>
+                          <td className="py-3.5 px-4 font-bold text-purple-600">{sickBal} Days</td>
+                          <td className="py-3.5 px-4 font-semibold text-slate-700">{usedPaid} Days Used</td>
+                          <td className="py-3.5 px-4 text-right font-extrabold text-emerald-600 text-sm">
+                            {paidBal + sickBal} Days
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
         </div>
       )}
 
