@@ -183,18 +183,41 @@ export default function TimeOffPage() {
               </div>
             </div>
 
-            {/* Year-round calendar month badges */}
-            <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 mb-4 p-2 bg-slate-50 rounded-2xl border border-slate-100">
+            {/* Year-round calendar month cards */}
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 mb-4 p-3 bg-slate-50 rounded-2xl border border-slate-100">
               {months.map((m, idx) => {
                 const monthNumStr = String(idx + 1).padStart(2, '0');
-                const hasValidated = myRequests.some(r => (r.start_date || '').includes(`-${monthNumStr}-`) && (r.status === 'Validated' || r.status === 'Approved'));
-                const hasPending = myRequests.some(r => (r.start_date || '').includes(`-${monthNumStr}-`) && r.status === 'Pending');
+                const validatedLeaves = myRequests.filter(r => (r.start_date || '').includes(`-${monthNumStr}-`) && (r.status === 'Validated' || r.status === 'Approved'));
+                const pendingLeaves = myRequests.filter(r => (r.start_date || '').includes(`-${monthNumStr}-`) && r.status === 'Pending');
+                const refusedLeaves = myRequests.filter(r => (r.start_date || '').includes(`-${monthNumStr}-`) && (r.status === 'Refused' || r.status === 'Rejected'));
+
                 return (
-                  <div key={m} className="flex flex-col items-center py-1 rounded-xl bg-white border border-slate-200/60 shadow-2xs">
-                    <span className="text-[10px] font-bold text-slate-600">{m}</span>
-                    <span className={`h-1.5 w-1.5 rounded-full mt-1 ${
-                      hasValidated ? 'bg-emerald-500' : hasPending ? 'bg-amber-500' : 'bg-slate-200'
-                    }`}></span>
+                  <div key={m} className="p-2.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex flex-col justify-between h-20 hover:border-indigo-300 transition">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-800">{m} 2026</span>
+                      <span className="text-[10px] text-slate-400 font-mono">M{idx+1}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 mt-2">
+                      {validatedLeaves.length > 0 && (
+                        <span className="h-4 px-1.5 bg-emerald-100 text-emerald-800 rounded-md text-[10px] font-bold flex items-center justify-center" title={`${validatedLeaves.length} Approved`}>
+                          {validatedLeaves.length} ✓
+                        </span>
+                      )}
+                      {pendingLeaves.length > 0 && (
+                        <span className="h-4 px-1.5 bg-amber-100 text-amber-800 rounded-md text-[10px] font-bold flex items-center justify-center" title={`${pendingLeaves.length} Pending`}>
+                          {pendingLeaves.length} ⏳
+                        </span>
+                      )}
+                      {refusedLeaves.length > 0 && (
+                        <span className="h-4 px-1.5 bg-rose-100 text-rose-800 rounded-md text-[10px] font-bold flex items-center justify-center" title={`${refusedLeaves.length} Refused`}>
+                          {refusedLeaves.length} ✕
+                        </span>
+                      )}
+                      {validatedLeaves.length === 0 && pendingLeaves.length === 0 && refusedLeaves.length === 0 && (
+                        <span className="text-[10px] text-slate-300 italic">No leaves</span>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -203,10 +226,12 @@ export default function TimeOffPage() {
             {/* My Requests List */}
             <div className="space-y-2">
               {myRequests.length === 0 ? (
-                <p className="text-xs text-slate-400 py-4 text-center">No time off requests submitted yet.</p>
+                <p className="text-xs text-slate-400 py-6 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                  No time off requests submitted yet. Click "NEW Request" above to submit one.
+                </p>
               ) : (
                 myRequests.map(r => (
-                  <div key={r.id} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex justify-between items-center text-xs">
+                  <div key={r.id} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex justify-between items-center text-xs hover:bg-slate-100/60 transition">
                     <div>
                       <span className="font-bold text-slate-900 block">{r.time_off_type || r.timeOffType}</span>
                       <span className="text-slate-500 font-mono">{r.validity_period || `${r.startDate || r.start_date} to ${r.endDate || r.end_date}`} • {r.allocation_days || 1} Days</span>
