@@ -75,17 +75,25 @@ export default function TimeOffPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {(() => {
-          // Use live employee data (always fresh from DB) over stale session cache
-          const liveMe = employees.find(e => e.id === currentUser?.id) || currentUser;
-          const paidAvail = liveMe?.paid_leave_balance ?? 24;
-          const sickAvail = liveMe?.sick_leave_balance ?? 7;
+          const myApprovedReqs = timeOffRequests.filter(r => (r.employee_id === currentUser?.id || r.empId === currentUser?.id) && (r.status === 'Validated' || r.status === 'Approved'));
+          const usedPaid = myApprovedReqs.filter(r => {
+            const t = (r.time_off_type || '').toLowerCase();
+            return !t.includes('sick') && !t.includes('medical');
+          }).reduce((acc, curr) => acc + Number(curr.allocation_days || 1), 0);
+          const usedSick = myApprovedReqs.filter(r => {
+            const t = (r.time_off_type || '').toLowerCase();
+            return t.includes('sick') || t.includes('medical');
+          }).reduce((acc, curr) => acc + Number(curr.allocation_days || 1), 0);
+
+          const paidAvail = Math.max(0, 24 - usedPaid);
+          const sickAvail = Math.max(0, 7 - usedSick);
           return (
             <>
               <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 text-white p-6 rounded-3xl shadow-lg border border-indigo-500 flex justify-between items-center">
                 <div>
                   <span className="text-[10px] uppercase font-extrabold tracking-wider opacity-80">Paid Time Off</span>
                   <p className="text-3xl font-black mt-1">{paidAvail} Days Available</p>
-                  <span className="text-xs opacity-90 mt-2 block font-medium">Valid for current ongoing period</span>
+                  <span className="text-xs opacity-90 mt-2 block font-medium">{usedPaid} days approved out of 24 allocated</span>
                 </div>
                 <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20">
                   <CalendarDays className="h-6 w-6" />
@@ -96,7 +104,7 @@ export default function TimeOffPage() {
                 <div>
                   <span className="text-[10px] uppercase font-extrabold tracking-wider opacity-80">Sick Time Off</span>
                   <p className="text-3xl font-black mt-1">{sickAvail} Days Available</p>
-                  <span className="text-xs opacity-90 mt-2 block font-medium">Valid for current ongoing period</span>
+                  <span className="text-xs opacity-90 mt-2 block font-medium">{usedSick} days approved out of 7 allocated</span>
                 </div>
                 <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20">
                   <CalendarIcon className="h-6 w-6" />
@@ -235,13 +243,13 @@ export default function TimeOffPage() {
                       const usedPaid = empReqs.filter(r => {
                         const t = (r.time_off_type || '').toLowerCase();
                         return !t.includes('sick') && !t.includes('medical');
-                      }).reduce((acc, curr) => acc + (curr.allocation_days || 1), 0);
+                      }).reduce((acc, curr) => acc + Number(curr.allocation_days || 1), 0);
                       const usedSick = empReqs.filter(r => {
                         const t = (r.time_off_type || '').toLowerCase();
                         return t.includes('sick') || t.includes('medical');
-                      }).reduce((acc, curr) => acc + (curr.allocation_days || 1), 0);
-                      const paidBal = emp.paid_leave_balance ?? 24;
-                      const sickBal = emp.sick_leave_balance ?? 7;
+                      }).reduce((acc, curr) => acc + Number(curr.allocation_days || 1), 0);
+                      const paidBal = Math.max(0, 24 - usedPaid);
+                      const sickBal = Math.max(0, 7 - usedSick);
                       const totalUsed = usedPaid + usedSick;
                       return (
                         <tr key={emp.id} className="hover:bg-slate-50/60 transition">
@@ -250,16 +258,16 @@ export default function TimeOffPage() {
                             <span className="block text-[11px] font-normal text-slate-400">{emp.department} • {emp.login_id || emp.loginId}</span>
                           </td>
                           <td className="py-3.5 px-4">
-                            <span className="font-bold text-indigo-600">{paidBal} Days</span>
-                            <span className="block text-[11px] text-slate-400 font-medium">{usedPaid} used</span>
+                            <span className="font-bold text-indigo-600">{paidBal} Days Left</span>
+                            <span className="block text-[11px] text-slate-400 font-medium">{usedPaid} used / 24 total</span>
                           </td>
                           <td className="py-3.5 px-4">
-                            <span className="font-bold text-purple-600">{sickBal} Days</span>
-                            <span className="block text-[11px] text-slate-400 font-medium">{usedSick} used</span>
+                            <span className="font-bold text-purple-600">{sickBal} Days Left</span>
+                            <span className="block text-[11px] text-slate-400 font-medium">{usedSick} used / 7 total</span>
                           </td>
                           <td className="py-3.5 px-4 font-semibold text-slate-700">{totalUsed} Days Used</td>
                           <td className="py-3.5 px-4 text-right font-extrabold text-emerald-600 text-sm">
-                            {paidBal + sickBal} Days
+                            {paidBal + sickBal} Days Available
                           </td>
                         </tr>
                       );

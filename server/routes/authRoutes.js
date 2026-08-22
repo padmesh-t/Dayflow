@@ -136,10 +136,29 @@ router.post('/sign-up', async (req, res) => {
     );
     const companyId = compRes.lastID;
 
-    // Generate Admin Login ID
-    const countObj = await db.get('SELECT COUNT(*) as count FROM users WHERE company_id = ?', [companyId]);
-    const serialNum = (countObj?.count || 0) + 1;
-    const loginId = generateLoginId('OI', name, new Date().getFullYear(), serialNum);
+    // Derive company prefix from company name (e.g. Cello India -> CI, Odoo India -> OI)
+    const words = companyName.trim().split(/\s+/).filter(Boolean);
+    let prefix = 'OI';
+    if (words.length >= 2) {
+      prefix = (words[0][0] + words[1][0]).toUpperCase();
+    } else if (words.length === 1 && words[0].length >= 2) {
+      prefix = words[0].substring(0, 2).toUpperCase();
+    }
+
+    // Generate Guaranteed-Unique Admin Login ID
+    const year = new Date().getFullYear();
+    let serialNum = 1;
+    let loginId = generateLoginId(prefix, name, year, serialNum);
+    let attempts = 0;
+    while (await db.get('SELECT id FROM users WHERE login_id = ?', [loginId])) {
+      serialNum++;
+      attempts++;
+      loginId = generateLoginId(prefix, name, year, serialNum);
+      if (attempts > 50) {
+        loginId = `${prefix}${name.substring(0, 4).toUpperCase().padEnd(4, 'X')}${year}${Date.now().toString().slice(-4)}`;
+        break;
+      }
+    }
 
     // Hash Password
     const passwordHash = await bcrypt.hash(password, 10);
@@ -148,12 +167,14 @@ router.post('/sign-up', async (req, res) => {
     const userRes = await db.run(`
       INSERT INTO users (
         company_id, login_id, name, email, phone, password_hash, role,
-        department, job_position, emp_code, date_of_joining, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        department, job_position, emp_code, date_of_joining, status,
+        paid_leave_balance, sick_leave_balance
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       companyId, loginId, name.trim(), email.trim(), phone || '',
       passwordHash, 'Admin', 'Executive', 'Company Founder & Admin',
-      `EMP-${1000 + serialNum}`, new Date().toISOString().split('T')[0], 'Present'
+      `EMP-${1000 + serialNum}`, new Date().toISOString().split('T')[0], 'Present',
+      24, 7
     ]);
 
     const newUser = await db.get('SELECT * FROM users WHERE id = ?', [userRes.lastID]);
@@ -169,7 +190,7 @@ router.post('/sign-up', async (req, res) => {
     });
   } catch (err) {
     console.error('Sign-up error:', err);
-    return res.status(500).json({ error: 'Internal server error during registration.' });
+    return res.status(500).json({ error: err.message || 'Internal server error during registration.' });
   }
 });
 

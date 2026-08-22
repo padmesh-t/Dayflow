@@ -34,6 +34,27 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', system: 'Dayflow HRMS Node.js SQLite API Engine' });
 });
 
+// Global error handler — catches JSON parse errors, validation errors, and all unhandled route errors
+// Must have 4 arguments for Express to recognize it as an error handler
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error('[Global Error Handler]', err.message || err);
+
+  // JSON body parse errors (SyntaxError from express.json())
+  if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) {
+    return res.status(400).json({ error: 'Invalid JSON in request body.' });
+  }
+
+  // Payload too large
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'Request payload too large. Max size is 10MB.' });
+  }
+
+  // All other errors — return a clean JSON error
+  const status = err.status || err.statusCode || 500;
+  return res.status(status).json({ error: err.message || 'Internal server error.' });
+});
+
 // Initialize Database & Start Express Server
 getDb()
   .then(() => {
