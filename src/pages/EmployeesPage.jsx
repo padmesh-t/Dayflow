@@ -155,7 +155,7 @@ export default function EmployeesPage({ onAddClick, onSelectEmployee }) {
               <div>
                 <div className="flex justify-between items-start">
                   <div className="flex items-center space-x-3">
-                    {emp.avatar_url && emp.avatar_url.startsWith('data:') ? (
+                    {emp.avatar_url && !emp.avatar_url.includes('default.png') ? (
                       <img src={emp.avatar_url} alt={emp.name} className="h-12 w-12 rounded-2xl object-cover border border-slate-200 shadow-xs" />
                     ) : (
                       <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-xs">

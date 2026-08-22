@@ -128,9 +128,17 @@ export default function Navbar({ activeTab, setActiveTab }) {
                 onClick={() => setShowAvatarDropdown(!showAvatarDropdown)}
                 className="flex items-center space-x-2 p-1 rounded-full hover:bg-slate-100 transition cursor-pointer"
               >
-                <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-bold text-sm flex items-center justify-center shadow-xs">
-                  {currentUser?.name ? currentUser.name.substring(0, 2).toUpperCase() : 'U'}
-                </div>
+                {currentUser?.avatar_url && !currentUser.avatar_url.includes('default.png') ? (
+                  <img 
+                    src={currentUser.avatar_url} 
+                    alt={currentUser.name} 
+                    className="h-9 w-9 rounded-full object-cover border border-indigo-200 shadow-xs" 
+                  />
+                ) : (
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-bold text-sm flex items-center justify-center shadow-xs">
+                    {currentUser?.name ? currentUser.name.substring(0, 2).toUpperCase() : 'U'}
+                  </div>
+                )}
                 <ChevronDown className="h-3.5 w-3.5 text-slate-400 hidden sm:block" />
               </button>
 

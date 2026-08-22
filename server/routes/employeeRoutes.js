@@ -64,7 +64,7 @@ router.post('/', async (req, res) => {
 
     const { 
       name, email, phone, role, department, jobPosition, 
-      monthlyWage, manager, location, dateOfJoining 
+      monthlyWage, manager, location, dateOfJoining, avatar_url 
     } = req.body;
 
     if (!name || !email) {
@@ -102,7 +102,7 @@ router.post('/', async (req, res) => {
       req.user.companyId, loginId, name.trim(), email.trim(), phone || '', passwordHash,
       role || 'Employee', department || 'Engineering', jobPosition || 'Software Engineer',
       manager || 'Padmesh T', location || 'Chennai, India', dateOfJoining || new Date().toISOString().split('T')[0],
-      `EMP-${1000 + serialNum}`, wageNum, yearlyNum, 'Present', '/avatars/default.png'
+      `EMP-${1000 + serialNum}`, wageNum, yearlyNum, 'Present', avatar_url || '/avatars/default.png'
     ]);
 
     // Send Simulated Welcome Credentials Email

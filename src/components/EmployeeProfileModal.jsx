@@ -116,12 +116,20 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdateEmploy
     }
   };
 
-  const handleAvatarUpload = (e) => {
-    const file = e.target.files[0];
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files && e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        handleChange('avatar_url', reader.result);
+      reader.onloadend = async () => {
+        const base64Data = reader.result;
+        handleChange('avatar_url', base64Data);
+        if (onUpdateEmployee && employee?.id) {
+          try {
+            await onUpdateEmployee(employee.id, { ...formData, avatar_url: base64Data });
+          } catch (err) {
+            console.error('Failed to auto-save avatar:', err);
+          }
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -142,15 +150,15 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdateEmploy
 
           <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-5 text-center sm:text-left">
             <div className="relative group">
-              {formData.avatar_url && formData.avatar_url.startsWith('data:') ? (
+              {formData.avatar_url && !formData.avatar_url.includes('default.png') ? (
                 <img src={formData.avatar_url} alt={formData.name} className="h-20 w-20 rounded-2xl object-cover border-2 border-white/20 shadow-md" />
               ) : (
                 <div className="h-20 w-20 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 text-white font-bold text-2xl flex items-center justify-center border-2 border-white/20 shadow-md">
                   {formData.name ? formData.name.substring(0, 2).toUpperCase() : 'EMP'}
                 </div>
               )}
-              {isOwnProfile && isEditing && (
-                <label className="absolute -bottom-1 -right-1 bg-indigo-600 hover:bg-indigo-700 text-white p-1.5 rounded-xl border border-white cursor-pointer shadow-sm">
+              {!viewOnly && (
+                <label className="absolute -bottom-1 -right-1 bg-indigo-600 hover:bg-indigo-700 text-white p-1.5 rounded-xl border border-white cursor-pointer shadow-md transition transform hover:scale-105" title="Change Profile Picture">
                   <Upload className="h-3.5 w-3.5" />
                   <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                 </label>
