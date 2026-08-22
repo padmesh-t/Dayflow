@@ -176,6 +176,8 @@ export function DataProvider({ children }) {
       attendance,
       timeOffRequests,
       fetchEmployees,
+      fetchAttendance,
+      fetchTimeOff,
       addEmployee,
       updateEmployee,
       checkIn,

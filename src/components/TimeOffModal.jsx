@@ -16,6 +16,35 @@ export default function TimeOffModal({ onClose, onSubmitSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const calculateDays = (start, end) => {
+    if (!start || !end) return 1.0;
+    const s = new Date(start);
+    const e = new Date(end);
+    if (isNaN(s.getTime()) || isNaN(e.getTime()) || e < s) return 1.0;
+    let count = 0;
+    let cur = new Date(s);
+    while (cur <= e) {
+      const day = cur.getDay();
+      if (day !== 0 && day !== 6) { // Count weekdays (Monday to Friday)
+        count++;
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+    return count > 0 ? count : 1.0;
+  };
+
+  const handleStartDateChange = (val) => {
+    setStartDate(val);
+    const newEnd = val > endDate ? val : endDate;
+    if (val > endDate) setEndDate(val);
+    setAllocationDays(calculateDays(val, newEnd));
+  };
+
+  const handleEndDateChange = (val) => {
+    setEndDate(val);
+    setAllocationDays(calculateDays(startDate, val));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -30,7 +59,7 @@ export default function TimeOffModal({ onClose, onSubmitSuccess }) {
         allocationDays,
         attachmentUrl
       });
-      if (onSubmitSuccess) onSubmitSuccess();
+      if (typeof onSubmitSuccess === 'function') onSubmitSuccess();
       onClose();
     } catch (err) {
       setError(err.message);
@@ -75,7 +104,7 @@ export default function TimeOffModal({ onClose, onSubmitSuccess }) {
             <input
               type="text"
               readOnly
-              value={currentUser?.name || 'Padmesh T'}
+              value={currentUser?.name || 'Employee'}
               className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-800 cursor-not-allowed"
             />
           </div>
@@ -100,7 +129,7 @@ export default function TimeOffModal({ onClose, onSubmitSuccess }) {
                 type="date"
                 required
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => handleStartDateChange(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold"
               />
             </div>
@@ -110,22 +139,27 @@ export default function TimeOffModal({ onClose, onSubmitSuccess }) {
               <input
                 type="date"
                 required
+                min={startDate}
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => handleEndDateChange(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold"
               />
             </div>
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">Allocation Days</label>
+            <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">Allocation (Days)</label>
             <input
               type="number"
               step="0.5"
+              min="0.5"
               value={allocationDays}
               onChange={(e) => setAllocationDays(parseFloat(e.target.value) || 1.0)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900"
             />
+            <p className="text-[10px] text-slate-400 mt-1 font-medium">
+              Number of working days requested (auto-calculated from date range excluding weekends, editable for half-days).
+            </p>
           </div>
 
           <div>
