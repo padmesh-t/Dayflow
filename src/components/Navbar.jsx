@@ -115,19 +115,6 @@ export default function Navbar({ activeTab, setActiveTab }) {
               </button>
             )}
 
-            {/* Presence Status Badge */}
-            <span className={`hidden md:inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-              isCheckedIn ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' :
-              currentUser?.status === 'On Leave' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/60' :
-              'bg-amber-50 text-amber-700 border border-amber-200/60'
-            }`}>
-              <span className={`h-2 w-2 rounded-full ${
-                isCheckedIn ? 'bg-emerald-500 animate-pulse' :
-                currentUser?.status === 'On Leave' ? 'bg-indigo-500' :
-                'bg-amber-500'
-              }`}></span>
-              <span>{isCheckedIn ? 'Checked In' : currentUser?.status || 'Checked Out'}</span>
-            </span>
 
             {/* Role Badge */}
             <span className="hidden lg:inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
