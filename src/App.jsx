@@ -4,15 +4,10 @@ import EmployeesPage from './pages/EmployeesPage';
 import AttendancePage from './pages/AttendancePage';
 import TimeOffPage from './pages/TimeOffPage';
 import MyProfilePage from './pages/MyProfilePage';
+import { AuthProvider } from './context/AuthContext';
 
-export default function App() {
+function MainApp() {
   const [activeTab, setActiveTab] = useState('employees');
-  const [currentRole, setRole] = useState('Admin');
-  const [currentUser, setCurrentUser] = useState({
-    name: 'Padmesh T',
-    jobPosition: 'Software Engineer',
-    email: 'padmesh.t01@gmail.com'
-  });
 
   const renderContent = () => {
     switch (activeTab) {
@@ -31,13 +26,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        currentRole={currentRole} 
-        setRole={setRole}
-        currentUser={currentUser}
-      />
+      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {renderContent()}
       </main>
@@ -45,5 +34,13 @@ export default function App() {
         Dayflow HR, Attendance & Payroll System &copy; {new Date().getFullYear()}
       </footer>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
   );
 }
