@@ -1,3 +1,5 @@
+// NOTE: This mock dataset is retained for offline/unit-testing reference.
+// The live application loads company-isolated data directly from the SQLite database via API.
 export const initialEmployees = [
   {
     id: 'emp-001',

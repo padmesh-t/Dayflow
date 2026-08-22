@@ -168,7 +168,8 @@ router.put('/:id', async (req, res) => {
     }
 
     values.push(id);
-    await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ? AND company_id = ?`, [...values, req.user.companyId]);
+    values.push(req.user.companyId);
+    await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ? AND company_id = ?`, values);
 
     const updatedUser = await db.get('SELECT * FROM users WHERE id = ? AND company_id = ?', [id, req.user.companyId]);
     delete updatedUser.password_hash;

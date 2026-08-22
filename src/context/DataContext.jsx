@@ -6,7 +6,7 @@ const DataContext = createContext();
 const API_BASE = 'http://localhost:5000/api';
 
 export function DataProvider({ children }) {
-  const { authHeaders, currentUser } = useAuth();
+  const { authHeaders, currentUser, refreshCurrentUser } = useAuth();
   // Start empty. Authenticated users must only ever see data returned by the
   // API for their own company — never the bundled mock dataset, which contains
   // cross-company placeholder employees.
@@ -84,6 +84,7 @@ export function DataProvider({ children }) {
       });
       if (res.ok) {
         await fetchEmployees();
+        if (refreshCurrentUser) await refreshCurrentUser();
       }
     } catch (err) {
       console.error('Error updating employee:', err);
@@ -101,6 +102,7 @@ export function DataProvider({ children }) {
       if (!res.ok) throw new Error(data.error || 'Check-in failed');
       await fetchEmployees();
       await fetchAttendance();
+      if (refreshCurrentUser) await refreshCurrentUser();
       return data;
     } catch (err) {
       throw err;
@@ -118,6 +120,7 @@ export function DataProvider({ children }) {
       if (!res.ok) throw new Error(data.error || 'Check-out failed');
       await fetchEmployees();
       await fetchAttendance();
+      if (refreshCurrentUser) await refreshCurrentUser();
       return data;
     } catch (err) {
       throw err;

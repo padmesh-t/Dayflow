@@ -52,7 +52,7 @@ function MainApp() {
       case 'timeoff':
         return <TimeOffPage />;
       case 'profile':
-        return <MyProfilePage />;
+        return <MyProfilePage onClose={() => setActiveTab('employees')} />;
       default:
         return (
           <EmployeesPage 
@@ -89,6 +89,7 @@ function MainApp() {
       {selectedEmployee && (
         <EmployeeProfileModal
           employee={selectedEmployee}
+          viewOnly={true}
           onClose={() => setSelectedEmployee(null)}
           onUpdateEmployee={async (id, fields) => {
             await updateEmployee(id, fields);

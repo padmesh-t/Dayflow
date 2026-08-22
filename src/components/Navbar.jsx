@@ -68,8 +68,16 @@ export default function Navbar({ activeTab, setActiveTab }) {
           <div className="flex items-center space-x-3 relative">
             
             {/* Presence Status Badge */}
-            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+              currentUser?.status === 'On Leave' ? 'bg-indigo-50 text-indigo-700' :
+              currentUser?.status === 'Absent' ? 'bg-amber-50 text-amber-700' :
+              'bg-emerald-50 text-emerald-700'
+            }`}>
+              <span className={`h-2 w-2 rounded-full ${
+                currentUser?.status === 'On Leave' ? 'bg-indigo-500' :
+                currentUser?.status === 'Absent' ? 'bg-amber-500' :
+                'bg-emerald-500 animate-pulse'
+              }`}></span>
               <span className="capitalize">{currentUser?.status || 'Present'}</span>
             </span>
 

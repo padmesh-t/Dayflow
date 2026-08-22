@@ -20,7 +20,7 @@ export default function EmployeesPage({ onAddClick, onSelectEmployee }) {
   const [selectedDept, setSelectedDept] = useState('All');
   const [viewMode, setViewMode] = useState('grid');
 
-  const departments = ['All', 'Engineering', 'Human Resources', 'Administration'];
+  const departments = ['All', ...Array.from(new Set(employees.map(e => e.department).filter(Boolean)))];
 
   const filteredEmployees = employees.filter(emp => {
     const name = emp.name || '';

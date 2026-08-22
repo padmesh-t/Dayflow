@@ -52,6 +52,22 @@ export default function AttendancePage() {
   const myLogs = attendance.filter(a => a.employee_id === currentUser?.id);
   const dateLogs = attendance.filter(a => a.date === selectedDate || !selectedDate);
 
+  // Dynamic calculations
+  const presentDays = myLogs.filter(a => a.check_in).length;
+  const totalWorkingDays = (() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    let count = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const day = new Date(year, month, d).getDay();
+      if (day !== 0 && day !== 6) count++;
+    }
+    return count;
+  })();
+  const leavesCount = Math.max(0, totalWorkingDays - presentDays);
+
   return (
     <div className="space-y-6">
       
@@ -107,7 +123,7 @@ export default function AttendancePage() {
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Count of Days Present</span>
-            <p className="text-2xl font-extrabold text-slate-900">{myLogs.length > 0 ? myLogs.length : 22} Days</p>
+            <p className="text-2xl font-extrabold text-slate-900">{presentDays > 0 ? presentDays : (myLogs.length > 0 ? myLogs.length : 22)} Days</p>
           </div>
         </div>
 
@@ -117,7 +133,7 @@ export default function AttendancePage() {
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Leaves Count</span>
-            <p className="text-2xl font-extrabold text-slate-900">02 Days</p>
+            <p className="text-2xl font-extrabold text-slate-900">{leavesCount} Days</p>
           </div>
         </div>
 
@@ -127,7 +143,7 @@ export default function AttendancePage() {
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Working Days</span>
-            <p className="text-2xl font-extrabold text-slate-900">24 Days</p>
+            <p className="text-2xl font-extrabold text-slate-900">{totalWorkingDays} Days</p>
           </div>
         </div>
       </div>
@@ -180,13 +196,17 @@ export default function AttendancePage() {
                     </td>
                   )}
                   <td className="py-3 px-4 font-mono font-semibold text-slate-700">{rec.date}</td>
-                  <td className="py-3 px-4 text-slate-800 font-semibold">{rec.check_in || rec.checkIn || '10:00'}</td>
-                  <td className="py-3 px-4 text-slate-800 font-semibold">{rec.check_out || rec.checkOut || '19:00'}</td>
-                  <td className="py-3 px-4 font-mono text-indigo-600 font-bold">{rec.work_hours || rec.workHours || '09:00'}</td>
-                  <td className="py-3 px-4 font-mono text-purple-600 font-bold">{rec.extra_hours || rec.extraHours || '01:00'}</td>
+                  <td className="py-3 px-4 text-slate-800 font-semibold">{rec.check_in || '-'}</td>
+                  <td className="py-3 px-4 text-slate-800 font-semibold">{rec.check_out || '-'}</td>
+                  <td className="py-3 px-4 font-mono text-indigo-600 font-bold">{rec.work_hours || '00:00'}</td>
+                  <td className="py-3 px-4 font-mono text-purple-600 font-bold">{rec.extra_hours || '00:00'}</td>
                   <td className="py-3 px-4 text-right">
-                    <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[11px]">
-                      <span>Present</span>
+                    <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full font-bold text-[11px] ${
+                      (rec.status === 'Present' || !rec.status) ? 'bg-emerald-50 text-emerald-700' :
+                      rec.status === 'On Leave' ? 'bg-indigo-50 text-indigo-700' :
+                      'bg-amber-50 text-amber-700'
+                    }`}>
+                      <span>{rec.status || 'Present'}</span>
                     </span>
                   </td>
                 </tr>

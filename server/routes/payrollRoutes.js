@@ -42,19 +42,26 @@ router.get('/payslip/:empId', async (req, res) => {
     const pfEmployer = Math.round((basic * pfPercent) / 100);
     const totalDeductions = pfEmployee + profTax;
 
-    // Attendance & Payable Days Reduction:
-    const attList = await db.all('SELECT * FROM attendance WHERE employee_id = ?', [empId]);
+    // Attendance & Payable Days Calculation:
+    const currentMonthStr = new Date().toISOString().slice(0, 7); // 'YYYY-MM'
+    const attList = await db.all(
+      `SELECT DISTINCT date FROM attendance 
+       WHERE employee_id = ? AND date LIKE ? AND check_in IS NOT NULL AND check_in != ''`,
+      [empId, `${currentMonthStr}%`]
+    );
     const presentDays = attList.length > 0 ? attList.length : 22;
 
     const unpaidLeavesList = await db.all(`
       SELECT * FROM time_off_requests 
       WHERE employee_id = ? AND time_off_type = 'Unpaid Leaves' AND status = 'Validated'
-    `, [empId]);
-    const unpaidLeavesCount = unpaidLeavesList.reduce((acc, curr) => acc + (curr.allocation_days || 1), 0);
+        AND start_date LIKE ?
+    `, [empId, `${currentMonthStr}%`]);
+    const unpaidLeavesCount = unpaidLeavesList.reduce((acc, curr) => acc + (Number(curr.allocation_days) || 1), 0);
 
-    const payableDays = Math.max(0, Number(monthDays) - unpaidLeavesCount);
+    const totalDaysNum = Number(monthDays) || 30;
+    const payableDays = Math.max(0, totalDaysNum - unpaidLeavesCount);
     const grossEarnings = basic + hra + stdAllowance + bonus + lta + fixedAllowance;
-    const netSalary = Math.round((grossEarnings - totalDeductions) * (payableDays / Number(monthDays)));
+    const netSalary = Math.round((grossEarnings - totalDeductions) * (payableDays / totalDaysNum));
 
     return res.json({
       employee: {

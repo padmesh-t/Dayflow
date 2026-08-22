@@ -7,11 +7,10 @@ import { useAuth } from '../context/AuthContext';
 import TimeOffModal from '../components/TimeOffModal';
 
 export default function TimeOffPage() {
-  const { timeOffRequests, updateTimeOffStatus, fetchEmployees } = useData();
+  const { timeOffRequests, updateTimeOffStatus, fetchTimeOff, fetchEmployees } = useData();
   const { currentUser, isHROfficer } = useAuth();
   
   const [showModal, setShowModal] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState('timeoff'); // 'timeoff' or 'allocation'
   const [msg, setMsg] = useState('');
 
   const publicHolidays = [
@@ -48,6 +47,8 @@ export default function TimeOffPage() {
 
   const myRequests = timeOffRequests.filter(r => r.employee_id === currentUser?.id || r.empId === currentUser?.id);
 
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
   return (
     <div className="space-y-6">
       
@@ -74,7 +75,7 @@ export default function TimeOffPage() {
         <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 text-white p-6 rounded-3xl shadow-lg border border-indigo-500 flex justify-between items-center">
           <div>
             <span className="text-[10px] uppercase font-extrabold tracking-wider opacity-80">Paid Time Off</span>
-            <p className="text-3xl font-black mt-1">24 Days Available</p>
+            <p className="text-3xl font-black mt-1">{currentUser?.paid_leave_balance ?? 24} Days Available</p>
             <span className="text-xs opacity-90 mt-2 block font-medium">Valid for current ongoing period</span>
           </div>
           <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20">
@@ -85,7 +86,7 @@ export default function TimeOffPage() {
         <div className="bg-gradient-to-br from-purple-600 to-indigo-800 text-white p-6 rounded-3xl shadow-lg border border-purple-500 flex justify-between items-center">
           <div>
             <span className="text-[10px] uppercase font-extrabold tracking-wider opacity-80">Sick Time Off</span>
-            <p className="text-3xl font-black mt-1">07 Days Available</p>
+            <p className="text-3xl font-black mt-1">{currentUser?.sick_leave_balance ?? 7} Days Available</p>
             <span className="text-xs opacity-90 mt-2 block font-medium">Valid for current ongoing period</span>
           </div>
           <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20">
@@ -142,14 +143,14 @@ export default function TimeOffPage() {
                         <div className="flex items-center justify-end space-x-2">
                           <button
                             onClick={() => handleReject(req.id)}
-                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition"
+                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition cursor-pointer"
                             title="Reject ❌"
                           >
                             <X className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleApprove(req.id)}
-                            className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-xl transition"
+                            className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-xl transition cursor-pointer"
                             title="Approve ✅"
                           >
                             <Check className="h-4 w-4" />
@@ -173,7 +174,7 @@ export default function TimeOffPage() {
         {/* Status Legend & Requests List */}
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs">
-            <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+            <div className="flex flex-wrap justify-between items-center mb-4 border-b border-slate-100 pb-3 gap-2">
               <h3 className="font-bold text-slate-900 text-sm">Time Off Status Legend & Calendar</h3>
               <div className="flex items-center space-x-3 text-xs font-semibold">
                 <span className="flex items-center space-x-1"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500"></span><span>Validated</span></span>
@@ -182,23 +183,44 @@ export default function TimeOffPage() {
               </div>
             </div>
 
+            {/* Year-round calendar month badges */}
+            <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 mb-4 p-2 bg-slate-50 rounded-2xl border border-slate-100">
+              {months.map((m, idx) => {
+                const monthNumStr = String(idx + 1).padStart(2, '0');
+                const hasValidated = myRequests.some(r => (r.start_date || '').includes(`-${monthNumStr}-`) && (r.status === 'Validated' || r.status === 'Approved'));
+                const hasPending = myRequests.some(r => (r.start_date || '').includes(`-${monthNumStr}-`) && r.status === 'Pending');
+                return (
+                  <div key={m} className="flex flex-col items-center py-1 rounded-xl bg-white border border-slate-200/60 shadow-2xs">
+                    <span className="text-[10px] font-bold text-slate-600">{m}</span>
+                    <span className={`h-1.5 w-1.5 rounded-full mt-1 ${
+                      hasValidated ? 'bg-emerald-500' : hasPending ? 'bg-amber-500' : 'bg-slate-200'
+                    }`}></span>
+                  </div>
+                );
+              })}
+            </div>
+
             {/* My Requests List */}
             <div className="space-y-2">
-              {myRequests.map(r => (
-                <div key={r.id} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex justify-between items-center text-xs">
-                  <div>
-                    <span className="font-bold text-slate-900 block">{r.time_off_type || r.timeOffType}</span>
-                    <span className="text-slate-500 font-mono">{r.validity_period || `${r.startDate} to ${r.endDate}`} • {r.allocation_days || 1} Days</span>
+              {myRequests.length === 0 ? (
+                <p className="text-xs text-slate-400 py-4 text-center">No time off requests submitted yet.</p>
+              ) : (
+                myRequests.map(r => (
+                  <div key={r.id} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex justify-between items-center text-xs">
+                    <div>
+                      <span className="font-bold text-slate-900 block">{r.time_off_type || r.timeOffType}</span>
+                      <span className="text-slate-500 font-mono">{r.validity_period || `${r.startDate || r.start_date} to ${r.endDate || r.end_date}`} • {r.allocation_days || 1} Days</span>
+                    </div>
+                    <span className={`font-bold px-3 py-1 rounded-full ${
+                      r.status === 'Validated' || r.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' :
+                      r.status === 'Refused' || r.status === 'Rejected' ? 'bg-rose-100 text-rose-700' :
+                      'bg-amber-100 text-amber-700'
+                    }`}>
+                      {r.status || 'Pending'}
+                    </span>
                   </div>
-                  <span className={`font-bold px-3 py-1 rounded-full ${
-                    r.status === 'Validated' || r.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' :
-                    r.status === 'Refused' || r.status === 'Rejected' ? 'bg-rose-100 text-rose-700' :
-                    'bg-amber-100 text-amber-700'
-                  }`}>
-                    {r.status || 'Pending'}
-                  </span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -225,7 +247,10 @@ export default function TimeOffPage() {
       {showModal && (
         <TimeOffModal
           onClose={() => setShowModal(false)}
-          onSubmitSuccess={() => fetchEmployees()}
+          onSubmitSuccess={() => {
+            fetchTimeOff();
+            fetchEmployees();
+          }}
         />
       )}
 

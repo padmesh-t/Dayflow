@@ -9,7 +9,7 @@ export default function AddEmployeeModal({ onClose, onAddSuccess }) {
   const [phone, setPhone] = useState('');
   const [department, setDepartment] = useState('Engineering');
   const [jobPosition, setJobPosition] = useState('Software Engineer');
-  const [monthlyWage, setMonthlyWage] = useState(50000);
+  const [monthlyWage, setMonthlyWage] = useState(100000);
   const [role, setRole] = useState('Employee');
 
   const [loading, setLoading] = useState(false);

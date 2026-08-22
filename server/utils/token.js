@@ -1,6 +1,11 @@
 import crypto from 'crypto';
 
-const SECRET = process.env.DAYFLOW_JWT_SECRET || 'dayflow-hrms-shared-secret-key-change-in-production';
+const SECRET = process.env.DAYFLOW_JWT_SECRET || (() => {
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('⚠️ [SECURITY WARNING] DAYFLOW_JWT_SECRET environment variable is not set. Using default fallback secret.');
+  }
+  return 'dayflow-hrms-shared-secret-key-change-in-production';
+})();
 
 function base64url(input) {
   return Buffer.from(input)

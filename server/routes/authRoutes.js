@@ -27,6 +27,8 @@ router.post('/sign-in', async (req, res) => {
     }
 
     const db = await getDb();
+    // Clean up expired OTPs to prevent unbounded table growth
+    await db.run("DELETE FROM otp_verifications WHERE expires_at < datetime('now')");
     const user = await db.get(
       'SELECT * FROM users WHERE login_id = ? OR email = ?',
       [loginOrEmail.trim(), loginOrEmail.trim()]

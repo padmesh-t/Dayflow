@@ -93,6 +93,21 @@ export function AuthProvider({ children }) {
     return headers;
   };
 
+  const refreshCurrentUser = async () => {
+    if (!currentUser?.id || !token) return;
+    try {
+      const res = await fetch(`${API_BASE}/employees/${currentUser.id}`, {
+        headers: authHeaders()
+      });
+      if (res.ok) {
+        const user = await res.json();
+        setCurrentUser(user);
+      }
+    } catch (err) {
+      console.warn('Error refreshing current user:', err);
+    }
+  };
+
   const changePassword = async (oldPassword, newPassword) => {
     if (!currentUser) return;
     const res = await fetch(`${API_BASE}/auth/change-password`, {
@@ -116,6 +131,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       currentUser,
+      setCurrentUser,
       currentRole,
       token,
       otpPendingEmail,
@@ -126,6 +142,7 @@ export function AuthProvider({ children }) {
       signUp,
       logout,
       changePassword,
+      refreshCurrentUser,
       authHeaders,
       isAdmin,
       isHROfficer,
