@@ -1,9 +1,12 @@
 import express from 'express';
 import { getDb } from '../db.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// 1. Get Time Off Requests
+router.use(requireAuth);
+
+// 1. Get Time Off Requests (Scoped to company; employees see only their own)
 router.get('/', async (req, res) => {
   try {
     const { employeeId } = req.query;
@@ -13,11 +16,15 @@ router.get('/', async (req, res) => {
       SELECT t.*, u.name as employee_name, u.email as employee_email, u.emp_code, u.department
       FROM time_off_requests t
       JOIN users u ON t.employee_id = u.id
+      WHERE u.company_id = ?
     `;
-    const params = [];
+    const params = [req.user.companyId];
 
-    if (employeeId) {
-      query += ` WHERE t.employee_id = ?`;
+    if (req.user.role === 'Employee') {
+      query += ` AND t.employee_id = ?`;
+      params.push(req.user.userId);
+    } else if (employeeId) {
+      query += ` AND t.employee_id = ?`;
       params.push(employeeId);
     }
 
@@ -31,22 +38,36 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. Submit Time Off Request
+// 2. Submit Time Off Request (Employee submits for self; Admin/HR may submit for anyone in company)
 router.post('/', async (req, res) => {
   try {
     const { employeeId, timeOffType, startDate, endDate, allocationDays, attachmentUrl } = req.body;
-    if (!employeeId || !timeOffType || !startDate || !endDate) {
+    const db = await getDb();
+
+    let targetId = employeeId;
+    if (req.user.role === 'Employee') {
+      targetId = req.user.userId;
+    }
+
+    if (!targetId || !timeOffType || !startDate || !endDate) {
       return res.status(400).json({ error: 'Employee ID, Time Off Type, Start Date and End Date are required.' });
     }
 
-    const db = await getDb();
+    const emp = await db.get(
+      'SELECT id FROM users WHERE id = ? AND company_id = ?',
+      [targetId, req.user.companyId]
+    );
+    if (!emp) {
+      return res.status(404).json({ error: 'Employee not found in your company.' });
+    }
+
     const validityPeriod = `${startDate} to ${endDate}`;
 
     const result = await db.run(`
       INSERT INTO time_off_requests (
         employee_id, time_off_type, start_date, end_date, validity_period, allocation_days, attachment_url, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')
-    `, [employeeId, timeOffType, startDate, endDate, validityPeriod, allocationDays || 1.0, attachmentUrl || null]);
+    `, [targetId, timeOffType, startDate, endDate, validityPeriod, allocationDays || 1.0, attachmentUrl || null]);
 
     const created = await db.get('SELECT * FROM time_off_requests WHERE id = ?', [result.lastID]);
     return res.status(201).json({ success: true, request: created, message: 'Time off request submitted successfully.' });
@@ -56,9 +77,13 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 3. Update Status (Approve / Reject)
+// 3. Update Status (Approve / Reject) — Admin/HR only, must belong to same company
 router.put('/:id/status', async (req, res) => {
   try {
+    if (req.user.role !== 'Admin' && req.user.role !== 'HR Officer') {
+      return res.status(403).json({ error: 'Only Admin or HR Officer can update request status.' });
+    }
+
     const { id } = req.params;
     const { status } = req.body; // 'Validated' or 'Refused'
 
@@ -67,16 +92,24 @@ router.put('/:id/status', async (req, res) => {
     }
 
     const db = await getDb();
+    const reqRecord = await db.get(`
+      SELECT t.* FROM time_off_requests t
+      JOIN users u ON t.employee_id = u.id
+      WHERE t.id = ? AND u.company_id = ?
+    `, [id, req.user.companyId]);
+
+    if (!reqRecord) {
+      return res.status(404).json({ error: 'Time off request not found.' });
+    }
+
     const mappedStatus = (status === 'Approved' || status === 'Validated') ? 'Validated' : 'Refused';
 
     await db.run('UPDATE time_off_requests SET status = ? WHERE id = ?', [mappedStatus, id]);
 
-    const reqRecord = await db.get('SELECT * FROM time_off_requests WHERE id = ?', [id]);
-    if (reqRecord && mappedStatus === 'Validated') {
-      // Update employee status if on leave today
+    if (mappedStatus === 'Validated') {
       const today = new Date().toISOString().split('T')[0];
       if (reqRecord.start_date <= today && reqRecord.end_date >= today) {
-        await db.run('UPDATE users SET status = ? WHERE id = ?', ['On Leave', reqRecord.employee_id]);
+        await db.run('UPDATE users SET status = ? WHERE id = ? AND company_id = ?', ['On Leave', reqRecord.employee_id, req.user.companyId]);
       }
     }
 

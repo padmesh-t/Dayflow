@@ -3,15 +3,20 @@ import bcrypt from 'bcryptjs';
 import { getDb } from '../db.js';
 import { generateLoginId, generateTempPassword } from '../utils/idGenerator.js';
 import { sendWelcomeCredentialsEmail } from '../utils/mailer.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// 1. Get All Employees (For Landing Page Grid / Table)
+// All employee routes require a valid session token and are scoped to the
+// authenticated user's company (multi-tenant isolation).
+router.use(requireAuth);
+
+// 1. Get All Employees (Scoped to the logged-in user's company)
 router.get('/', async (req, res) => {
   try {
     const db = await getDb();
-    const employees = await db.all(`
-      SELECT 
+    const employees = await db.all(
+      `SELECT 
         id, company_id, login_id, name, email, phone, role, avatar_url,
         department, job_position, manager, location, date_of_joining, status,
         emp_code, monthly_wage, yearly_wage, basic_percent, hra_percent, pf_percent, professional_tax,
@@ -20,8 +25,10 @@ router.get('/', async (req, res) => {
         about, love_about_job, hobbies, skills, certifications,
         paid_leave_balance, sick_leave_balance, is_temp_password
       FROM users 
-      ORDER BY id ASC
-    `);
+      WHERE company_id = ?
+      ORDER BY id ASC`,
+      [req.user.companyId]
+    );
     return res.json(employees);
   } catch (err) {
     console.error('Fetch employees error:', err);
@@ -29,11 +36,14 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. Get Single Employee Details
+// 2. Get Single Employee Details (Must belong to same company)
 router.get('/:id', async (req, res) => {
   try {
     const db = await getDb();
-    const employee = await db.get('SELECT * FROM users WHERE id = ?', [req.params.id]);
+    const employee = await db.get(
+      'SELECT * FROM users WHERE id = ? AND company_id = ?',
+      [req.params.id, req.user.companyId]
+    );
     if (!employee) {
       return res.status(404).json({ error: 'Employee not found.' });
     }
@@ -45,9 +55,13 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 3. Create New Employee (Admin / HR Officer Only)
+// 3. Create New Employee (Admin / HR Officer Only, scoped to their company)
 router.post('/', async (req, res) => {
   try {
+    if (req.user.role !== 'Admin' && req.user.role !== 'HR Officer') {
+      return res.status(403).json({ error: 'Only Admin or HR Officer can create employees.' });
+    }
+
     const { 
       name, email, phone, role, department, jobPosition, 
       monthlyWage, manager, location, dateOfJoining 
@@ -59,15 +73,15 @@ router.post('/', async (req, res) => {
 
     const db = await getDb();
 
-    // Check email uniqueness
+    // Check email uniqueness (global, as emails are unique across system)
     const existing = await db.get('SELECT id FROM users WHERE email = ?', [email.trim()]);
     if (existing) {
       return res.status(400).json({ error: 'Employee email already exists.' });
     }
 
-    // Auto-generate Login ID (Format: OIJODO20250001)
+    // Auto-generate Login ID (Format: OIJODO20250001) — serial is per-company
     const year = dateOfJoining ? new Date(dateOfJoining).getFullYear() : new Date().getFullYear();
-    const countObj = await db.get('SELECT COUNT(*) as count FROM users');
+    const countObj = await db.get('SELECT COUNT(*) as count FROM users WHERE company_id = ?', [req.user.companyId]);
     const serialNum = (countObj?.count || 0) + 1;
     const loginId = generateLoginId('OI', name, year, serialNum);
 
@@ -85,7 +99,7 @@ router.post('/', async (req, res) => {
         emp_code, monthly_wage, yearly_wage, status, avatar_url
       ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      1, loginId, name.trim(), email.trim(), phone || '', passwordHash,
+      req.user.companyId, loginId, name.trim(), email.trim(), phone || '', passwordHash,
       role || 'Employee', department || 'Engineering', jobPosition || 'Software Engineer',
       manager || 'Padmesh T', location || 'Chennai, India', dateOfJoining || new Date().toISOString().split('T')[0],
       `EMP-${1000 + serialNum}`, wageNum, yearlyNum, 'Present', '/avatars/default.png'
@@ -110,11 +124,25 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 4. Update Employee Details
+// 4. Update Employee Details (Same company; employees may only edit themselves)
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const db = await getDb();
+
+    const target = await db.get(
+      'SELECT id, company_id FROM users WHERE id = ?',
+      [id]
+    );
+    if (!target || target.company_id !== req.user.companyId) {
+      return res.status(404).json({ error: 'Employee not found.' });
+    }
+
+    const isSelf = target.id === req.user.userId;
+    const isPrivileged = req.user.role === 'Admin' || req.user.role === 'HR Officer';
+    if (!isSelf && !isPrivileged) {
+      return res.status(403).json({ error: 'You can only update your own profile.' });
+    }
 
     const allowedFields = [
       'name', 'phone', 'role', 'department', 'job_position', 'manager', 'location',
@@ -140,9 +168,9 @@ router.put('/:id', async (req, res) => {
     }
 
     values.push(id);
-    await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
+    await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ? AND company_id = ?`, [...values, req.user.companyId]);
 
-    const updatedUser = await db.get('SELECT * FROM users WHERE id = ?', [id]);
+    const updatedUser = await db.get('SELECT * FROM users WHERE id = ? AND company_id = ?', [id, req.user.companyId]);
     delete updatedUser.password_hash;
 
     return res.json({ success: true, employee: updatedUser, message: 'Profile updated successfully.' });

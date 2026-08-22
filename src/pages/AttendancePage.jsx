@@ -9,8 +9,8 @@ export default function AttendancePage() {
   const { attendance, checkIn, checkOut } = useData();
   const { currentUser, isHROfficer } = useAuth();
   
-  const [selectedMonth, setSelectedMonth] = useState('October 2025');
-  const [selectedDate, setSelectedDate] = useState('2025-10-28');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }));
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
