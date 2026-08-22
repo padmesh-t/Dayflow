@@ -1,7 +1,10 @@
 import express from 'express';
 import { getDb } from '../db.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
+
+router.use(requireAuth);
 
 router.get('/payslip/:empId', async (req, res) => {
   try {
@@ -9,7 +12,7 @@ router.get('/payslip/:empId', async (req, res) => {
     const { monthDays = 30 } = req.query;
 
     const db = await getDb();
-    const emp = await db.get('SELECT * FROM users WHERE id = ?', [empId]);
+    const emp = await db.get('SELECT * FROM users WHERE id = ? AND company_id = ?', [empId, req.user.companyId]);
     if (!emp) {
       return res.status(404).json({ error: 'Employee not found.' });
     }

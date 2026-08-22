@@ -10,6 +10,10 @@ export function AuthProvider({ children }) {
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [token, setToken] = useState(() => {
+    return localStorage.getItem('dayflow_token') || '';
+  });
+
   const [otpPendingEmail, setOtpPendingEmail] = useState(null);
   const [demoOtpCode, setDemoOtpCode] = useState('');
 
@@ -20,6 +24,14 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('dayflow_user');
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem('dayflow_token', token);
+    } else {
+      localStorage.removeItem('dayflow_token');
+    }
+  }, [token]);
 
   const signIn = async (loginOrEmail, password) => {
     const res = await fetch(`${API_BASE}/auth/sign-in`, {
@@ -48,6 +60,7 @@ export function AuthProvider({ children }) {
     if (!res.ok) throw new Error(data.error || 'Verification failed');
 
     setCurrentUser(data.user);
+    setToken(data.token || '');
     setOtpPendingEmail(null);
     setDemoOtpCode('');
     return data;
@@ -66,15 +79,25 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     setCurrentUser(null);
+    setToken('');
     setOtpPendingEmail(null);
     localStorage.removeItem('dayflow_user');
+  };
+
+  // Build Authorization headers for API requests (Bearer token when signed in)
+  const authHeaders = (extra = {}) => {
+    const headers = { 'Content-Type': 'application/json', ...extra };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
   };
 
   const changePassword = async (oldPassword, newPassword) => {
     if (!currentUser) return;
     const res = await fetch(`${API_BASE}/auth/change-password`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ userId: currentUser.id, oldPassword, newPassword })
     });
     const data = await res.json();
@@ -94,6 +117,7 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       currentUser,
       currentRole,
+      token,
       otpPendingEmail,
       setOtpPendingEmail,
       demoOtpCode,
@@ -102,6 +126,7 @@ export function AuthProvider({ children }) {
       signUp,
       logout,
       changePassword,
+      authHeaders,
       isAdmin,
       isHROfficer,
       isEmployee

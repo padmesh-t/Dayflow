@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { initialEmployees, initialAttendance, initialTimeOff } from '../data/mockData';
+import { useAuth } from './AuthContext';
 
 const DataContext = createContext();
 
 const API_BASE = 'http://localhost:5000/api';
 
 export function DataProvider({ children }) {
+  const { authHeaders, currentUser } = useAuth();
   const [employees, setEmployees] = useState(initialEmployees);
   const [attendance, setAttendance] = useState(initialAttendance);
   const [timeOffRequests, setTimeOffRequests] = useState(initialTimeOff);
@@ -13,7 +15,7 @@ export function DataProvider({ children }) {
 
   const fetchEmployees = async () => {
     try {
-      const res = await fetch(`${API_BASE}/employees`);
+      const res = await fetch(`${API_BASE}/employees`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (data.length > 0) setEmployees(data);
@@ -25,7 +27,7 @@ export function DataProvider({ children }) {
 
   const fetchAttendance = async () => {
     try {
-      const res = await fetch(`${API_BASE}/attendance/logs`);
+      const res = await fetch(`${API_BASE}/attendance/logs`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (data.length > 0) setAttendance(data);
@@ -37,7 +39,7 @@ export function DataProvider({ children }) {
 
   const fetchTimeOff = async () => {
     try {
-      const res = await fetch(`${API_BASE}/timeoff`);
+      const res = await fetch(`${API_BASE}/timeoff`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (data.length > 0) setTimeOffRequests(data);
@@ -47,17 +49,20 @@ export function DataProvider({ children }) {
     }
   };
 
+  // Re-fetch all scoped data whenever the authenticated user changes (e.g. after login)
   useEffect(() => {
+    if (!currentUser?.id) return;
     fetchEmployees();
     fetchAttendance();
     fetchTimeOff();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.id]);
 
   const addEmployee = async (newEmp) => {
     try {
       const res = await fetch(`${API_BASE}/employees`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(newEmp)
       });
       if (res.ok) {
@@ -72,7 +77,7 @@ export function DataProvider({ children }) {
     try {
       const res = await fetch(`${API_BASE}/employees/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(updatedFields)
       });
       if (res.ok) {
@@ -87,7 +92,7 @@ export function DataProvider({ children }) {
     try {
       const res = await fetch(`${API_BASE}/attendance/check-in`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ employeeId })
       });
       const data = await res.json();
@@ -104,7 +109,7 @@ export function DataProvider({ children }) {
     try {
       const res = await fetch(`${API_BASE}/attendance/check-out`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ employeeId })
       });
       const data = await res.json();
@@ -121,7 +126,7 @@ export function DataProvider({ children }) {
     try {
       const res = await fetch(`${API_BASE}/timeoff`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(request)
       });
       const data = await res.json();
@@ -137,7 +142,7 @@ export function DataProvider({ children }) {
     try {
       const res = await fetch(`${API_BASE}/timeoff/${id}/status`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ status })
       });
       const data = await res.json();
@@ -152,7 +157,7 @@ export function DataProvider({ children }) {
 
   const fetchPayslip = async (empId, monthDays = 30) => {
     try {
-      const res = await fetch(`${API_BASE}/payroll/payslip/${empId}?monthDays=${monthDays}`);
+      const res = await fetch(`${API_BASE}/payroll/payslip/${empId}?monthDays=${monthDays}`, { headers: authHeaders() });
       if (!res.ok) throw new Error('Payslip fetch failed');
       return await res.json();
     } catch (err) {

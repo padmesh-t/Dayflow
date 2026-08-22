@@ -9,7 +9,7 @@ import SignUp from './components/SignUp';
 import OtpModal from './components/OtpModal';
 import AddEmployeeModal from './components/AddEmployeeModal';
 import EmployeeProfileModal from './components/EmployeeProfileModal';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
 import { useData } from './context/DataContext';
 
 function MainApp() {
@@ -101,9 +101,5 @@ function MainApp() {
 }
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
-  );
+  return <MainApp />;
 }

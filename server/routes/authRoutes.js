@@ -3,8 +3,20 @@ import bcrypt from 'bcryptjs';
 import { getDb } from '../db.js';
 import { generateLoginId } from '../utils/idGenerator.js';
 import { generateOTP, sendOtpEmail } from '../utils/mailer.js';
+import { signToken } from '../utils/token.js';
 
 const router = express.Router();
+
+function buildToken(user) {
+  return signToken({
+    userId: user.id,
+    companyId: user.company_id,
+    role: user.role,
+    loginId: user.login_id,
+    email: user.email,
+    name: user.name
+  });
+}
 
 // 1. Sign In (Check Credentials -> Trigger 2FA OTP)
 router.post('/sign-in', async (req, res) => {
@@ -86,9 +98,11 @@ router.post('/verify-otp', async (req, res) => {
     }
 
     delete user.password_hash;
+    const token = buildToken(user);
     return res.json({
       success: true,
       user,
+      token,
       message: 'Email OTP verified successfully. Welcome to Dayflow!'
     });
   } catch (err) {
@@ -142,11 +156,13 @@ router.post('/sign-up', async (req, res) => {
 
     const newUser = await db.get('SELECT * FROM users WHERE id = ?', [userRes.lastID]);
     delete newUser.password_hash;
+    const token = buildToken(newUser);
 
     return res.status(201).json({
       success: true,
       user: newUser,
       loginId,
+      token,
       message: `Account registered successfully! Your Auto Login ID is ${loginId}.`
     });
   } catch (err) {

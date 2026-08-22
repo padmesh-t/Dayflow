@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { X, UserPlus, Sparkles, CheckCircle2, Copy } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function AddEmployeeModal({ onClose, onAddSuccess }) {
+  const { authHeaders } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -22,7 +24,7 @@ export default function AddEmployeeModal({ onClose, onAddSuccess }) {
     try {
       const res = await fetch('http://localhost:5000/api/employees', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({
           name,
           email,
