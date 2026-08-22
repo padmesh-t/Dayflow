@@ -156,46 +156,6 @@ export default function AttendancePage() {
   return (
     <div className="space-y-6">
       
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-3xl shadow-xl border border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Attendance & Work Hours</h1>
-          <p className="text-xs text-indigo-200 mt-1">
-            Track daily check-in/out, view interactive calendar, and monitor monthly hours.
-          </p>
-        </div>
-
-        {/* Live Check-In / Check-Out Toggle */}
-        <div className="flex items-center space-x-3 bg-white/10 p-2.5 rounded-2xl border border-white/10 backdrop-blur-xs">
-          <div className="text-right">
-            <span className="text-[10px] uppercase font-bold text-slate-300 tracking-wider block">Status</span>
-            <span className="text-xs font-bold text-emerald-400 flex items-center justify-end space-x-1">
-              <span className={`h-2 w-2 rounded-full ${isCheckedIn ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-              <span>{isCheckedIn ? `Checked In (${userTodayRecord?.check_in})` : 'Checked Out'}</span>
-            </span>
-          </div>
-
-          {!isCheckedIn ? (
-            <button
-              onClick={handleCheckIn}
-              disabled={loading}
-              className="inline-flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition transform active:scale-95 cursor-pointer disabled:opacity-50"
-            >
-              <Play className="h-3.5 w-3.5 fill-current" />
-              <span>Check In →</span>
-            </button>
-          ) : (
-            <button
-              onClick={handleCheckOut}
-              disabled={loading}
-              className="inline-flex items-center space-x-2 bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition transform active:scale-95 cursor-pointer disabled:opacity-50"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              <span>Check Out →</span>
-            </button>
-          )}
-        </div>
-      </div>
 
       {msg && <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-2xl text-xs font-bold">{msg}</div>}
       {error && <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-2xl text-xs font-bold">{error}</div>}
