@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building2, Eye, EyeOff, Upload, ArrowRight, User, Mail, Phone, Lock } from 'lucide-react';
+import { Building2, Eye, EyeOff, Upload, ArrowRight, User, Mail, Phone, Lock, CheckCircle2, Copy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function SignUp({ onNavigateToSignIn, onSignUpSuccess }) {
@@ -16,6 +16,8 @@ export default function SignUp({ onNavigateToSignIn, onSignUpSuccess }) {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [createdResult, setCreatedResult] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,13 +38,18 @@ export default function SignUp({ onNavigateToSignIn, onSignUpSuccess }) {
         password,
         logoUrl
       });
-      alert(`Registration Successful!\nYour Auto-Generated Admin Login ID is: ${data.loginId}`);
-      if (onSignUpSuccess) onSignUpSuccess(data);
+      setCreatedResult(data);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleLogoUpload = (e) => {
@@ -78,39 +85,79 @@ export default function SignUp({ onNavigateToSignIn, onSignUpSuccess }) {
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-xl shadow-slate-200/50 border border-slate-200 sm:rounded-3xl sm:px-10">
           
-          {error && (
-            <div className="mb-4 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl text-xs font-semibold animate-in fade-in">
-              {error}
-            </div>
-          )}
-
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {/* Company Name & Logo */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Company Name
-              </label>
-              <div className="flex items-center space-x-2">
-                <div className="relative flex-1">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Building2 className="h-4 w-4" />
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    placeholder="e.g. Odoo India"
-                    className="block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                  />
-                </div>
-                <label className="cursor-pointer flex items-center justify-center p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200 transition" title="Upload Company Logo">
-                  <Upload className="h-4 w-4 text-slate-600" />
-                  <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                </label>
+          {createdResult ? (
+            <div className="space-y-6 text-center animate-in fade-in zoom-in-95">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-3xl bg-emerald-50 text-emerald-600 border border-emerald-100">
+                <CheckCircle2 className="h-8 w-8" />
               </div>
-              {logoUrl && <span className="text-[10px] text-emerald-600 font-bold block mt-1">✓ Company Logo attached</span>}
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">Company Registered!</h3>
+                <p className="text-xs text-slate-500 mt-1">Your company and Admin profile are created.</p>
+              </div>
+
+              <div className="bg-indigo-50/80 border border-indigo-100 p-4 rounded-2xl text-left space-y-2">
+                <span className="text-[10px] uppercase font-bold text-indigo-500 tracking-wider">Your Admin Login ID</span>
+                <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-indigo-200">
+                  <span className="font-mono text-base font-bold text-indigo-700">{createdResult.loginId}</span>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(createdResult.loginId)}
+                    className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-indigo-600 transition cursor-pointer"
+                    title="Copy Login ID"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+                {copied && <span className="text-[10px] text-emerald-600 font-bold block">✓ Copied to clipboard!</span>}
+                <p className="text-[11px] text-slate-500 mt-1">Use this Login ID or your registered email address to sign in.</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (onSignUpSuccess) onSignUpSuccess(createdResult);
+                  else if (onNavigateToSignIn) onNavigateToSignIn();
+                }}
+                className="w-full py-3 px-4 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition cursor-pointer"
+              >
+                Proceed to Sign In →
+              </button>
             </div>
+          ) : (
+            <>
+              {error && (
+                <div className="mb-4 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl text-xs font-semibold animate-in fade-in">
+                  {error}
+                </div>
+              )}
+
+              <form className="space-y-4" onSubmit={handleSubmit}>
+                {/* Company Name & Logo */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Company Name
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <Building2 className="h-4 w-4" />
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        placeholder="e.g. Odoo India"
+                        className="block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                      />
+                    </div>
+                    <label className="cursor-pointer flex items-center justify-center p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200 transition" title="Upload Company Logo">
+                      <Upload className="h-4 w-4 text-slate-600" />
+                      <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                    </label>
+                  </div>
+                  {logoUrl && <span className="text-[10px] text-emerald-600 font-bold block mt-1">✓ Company Logo attached</span>}
+                </div>
 
             {/* Admin Name */}
             <div>
@@ -246,6 +293,8 @@ export default function SignUp({ onNavigateToSignIn, onSignUpSuccess }) {
               Already have an account? Sign In
             </button>
           </div>
+            </>
+          )}
 
         </div>
       </div>
