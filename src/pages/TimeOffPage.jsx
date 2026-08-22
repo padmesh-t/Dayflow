@@ -74,27 +74,37 @@ export default function TimeOffPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 text-white p-6 rounded-3xl shadow-lg border border-indigo-500 flex justify-between items-center">
-          <div>
-            <span className="text-[10px] uppercase font-extrabold tracking-wider opacity-80">Paid Time Off</span>
-            <p className="text-3xl font-black mt-1">{currentUser?.paid_leave_balance ?? 24} Days Available</p>
-            <span className="text-xs opacity-90 mt-2 block font-medium">Valid for current ongoing period</span>
-          </div>
-          <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20">
-            <CalendarDays className="h-6 w-6" />
-          </div>
-        </div>
+        {(() => {
+          // Use live employee data (always fresh from DB) over stale session cache
+          const liveMe = employees.find(e => e.id === currentUser?.id) || currentUser;
+          const paidAvail = liveMe?.paid_leave_balance ?? 24;
+          const sickAvail = liveMe?.sick_leave_balance ?? 7;
+          return (
+            <>
+              <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 text-white p-6 rounded-3xl shadow-lg border border-indigo-500 flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] uppercase font-extrabold tracking-wider opacity-80">Paid Time Off</span>
+                  <p className="text-3xl font-black mt-1">{paidAvail} Days Available</p>
+                  <span className="text-xs opacity-90 mt-2 block font-medium">Valid for current ongoing period</span>
+                </div>
+                <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20">
+                  <CalendarDays className="h-6 w-6" />
+                </div>
+              </div>
 
-        <div className="bg-gradient-to-br from-purple-600 to-indigo-800 text-white p-6 rounded-3xl shadow-lg border border-purple-500 flex justify-between items-center">
-          <div>
-            <span className="text-[10px] uppercase font-extrabold tracking-wider opacity-80">Sick Time Off</span>
-            <p className="text-3xl font-black mt-1">{currentUser?.sick_leave_balance ?? 7} Days Available</p>
-            <span className="text-xs opacity-90 mt-2 block font-medium">Valid for current ongoing period</span>
-          </div>
-          <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20">
-            <CalendarIcon className="h-6 w-6" />
-          </div>
-        </div>
+              <div className="bg-gradient-to-br from-purple-600 to-indigo-800 text-white p-6 rounded-3xl shadow-lg border border-purple-500 flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] uppercase font-extrabold tracking-wider opacity-80">Sick Time Off</span>
+                  <p className="text-3xl font-black mt-1">{sickAvail} Days Available</p>
+                  <span className="text-xs opacity-90 mt-2 block font-medium">Valid for current ongoing period</span>
+                </div>
+                <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20">
+                  <CalendarIcon className="h-6 w-6" />
+                </div>
+              </div>
+            </>
+          );
+        })()}
       </div>
 
       {/* ADMIN & HR OFFICER APPROVAL & ALLOCATION SECTION */}
