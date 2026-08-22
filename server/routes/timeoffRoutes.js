@@ -103,14 +103,36 @@ router.put('/:id/status', async (req, res) => {
     }
 
     const mappedStatus = (status === 'Approved' || status === 'Validated') ? 'Validated' : 'Refused';
+    const wasAlreadyValidated = reqRecord.status === 'Validated';
+    const days = reqRecord.allocation_days || 1;
+
+    // Determine leave balance column based on type
+    const type = (reqRecord.time_off_type || '').toLowerCase();
+    const isSick = type.includes('sick') || type.includes('medical');
+    const balanceCol = isSick ? 'sick_leave_balance' : 'paid_leave_balance';
 
     await db.run('UPDATE time_off_requests SET status = ? WHERE id = ?', [mappedStatus, id]);
 
-    if (mappedStatus === 'Validated') {
+    if (mappedStatus === 'Validated' && !wasAlreadyValidated) {
+      // Deduct days from the appropriate balance (floor at 0)
+      await db.run(`
+        UPDATE users 
+        SET ${balanceCol} = MAX(0, COALESCE(${balanceCol}, 0) - ?)
+        WHERE id = ? AND company_id = ?
+      `, [days, reqRecord.employee_id, req.user.companyId]);
+
+      // If leave is currently active, mark employee status as On Leave
       const today = new Date().toISOString().split('T')[0];
       if (reqRecord.start_date <= today && reqRecord.end_date >= today) {
         await db.run('UPDATE users SET status = ? WHERE id = ? AND company_id = ?', ['On Leave', reqRecord.employee_id, req.user.companyId]);
       }
+    } else if (mappedStatus === 'Refused' && wasAlreadyValidated) {
+      // Refunding days back if previously approved leave is now refused
+      await db.run(`
+        UPDATE users 
+        SET ${balanceCol} = COALESCE(${balanceCol}, 0) + ?
+        WHERE id = ? AND company_id = ?
+      `, [days, reqRecord.employee_id, req.user.companyId]);
     }
 
     return res.json({ success: true, status: mappedStatus, message: `Time off request marked as ${mappedStatus}` });

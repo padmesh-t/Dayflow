@@ -221,18 +221,33 @@ export default function TimeOffPage() {
                   {employees
                     .filter(e => !searchQuery || e.name.toLowerCase().includes(searchQuery.toLowerCase()))
                     .map(emp => {
-                      const usedPaid = timeOffRequests.filter(r => (r.employee_id === emp.id || r.empId === emp.id) && (r.status === 'Validated' || r.status === 'Approved')).reduce((acc, curr) => acc + (curr.allocation_days || 1), 0);
+                      const empReqs = timeOffRequests.filter(r => (r.employee_id === emp.id || r.empId === emp.id) && (r.status === 'Validated' || r.status === 'Approved'));
+                      const usedPaid = empReqs.filter(r => {
+                        const t = (r.time_off_type || '').toLowerCase();
+                        return !t.includes('sick') && !t.includes('medical');
+                      }).reduce((acc, curr) => acc + (curr.allocation_days || 1), 0);
+                      const usedSick = empReqs.filter(r => {
+                        const t = (r.time_off_type || '').toLowerCase();
+                        return t.includes('sick') || t.includes('medical');
+                      }).reduce((acc, curr) => acc + (curr.allocation_days || 1), 0);
                       const paidBal = emp.paid_leave_balance ?? 24;
                       const sickBal = emp.sick_leave_balance ?? 7;
+                      const totalUsed = usedPaid + usedSick;
                       return (
                         <tr key={emp.id} className="hover:bg-slate-50/60 transition">
                           <td className="py-3.5 px-4 font-bold text-slate-900">
                             {emp.name}
                             <span className="block text-[11px] font-normal text-slate-400">{emp.department} • {emp.login_id || emp.loginId}</span>
                           </td>
-                          <td className="py-3.5 px-4 font-bold text-indigo-600">{paidBal} Days</td>
-                          <td className="py-3.5 px-4 font-bold text-purple-600">{sickBal} Days</td>
-                          <td className="py-3.5 px-4 font-semibold text-slate-700">{usedPaid} Days Used</td>
+                          <td className="py-3.5 px-4">
+                            <span className="font-bold text-indigo-600">{paidBal} Days</span>
+                            <span className="block text-[11px] text-slate-400 font-medium">{usedPaid} used</span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="font-bold text-purple-600">{sickBal} Days</span>
+                            <span className="block text-[11px] text-slate-400 font-medium">{usedSick} used</span>
+                          </td>
+                          <td className="py-3.5 px-4 font-semibold text-slate-700">{totalUsed} Days Used</td>
                           <td className="py-3.5 px-4 text-right font-extrabold text-emerald-600 text-sm">
                             {paidBal + sickBal} Days
                           </td>

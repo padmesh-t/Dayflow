@@ -154,6 +154,7 @@ export function DataProvider({ children }) {
       if (!res.ok) throw new Error(data.error || 'Status update failed');
       await fetchTimeOff();
       await fetchEmployees();
+      if (refreshCurrentUser) await refreshCurrentUser();
       return data;
     } catch (err) {
       throw err;
