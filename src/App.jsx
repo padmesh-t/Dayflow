@@ -4,10 +4,31 @@ import EmployeesPage from './pages/EmployeesPage';
 import AttendancePage from './pages/AttendancePage';
 import TimeOffPage from './pages/TimeOffPage';
 import MyProfilePage from './pages/MyProfilePage';
-import { AuthProvider } from './context/AuthContext';
+import SignIn from './components/SignIn';
+import SignUp from './components/SignUp';
+import OtpModal from './components/OtpModal';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 function MainApp() {
+  const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('employees');
+  const [authView, setAuthView] = useState('signin'); // 'signin' or 'signup'
+
+  if (!currentUser) {
+    return (
+      <>
+        {authView === 'signin' ? (
+          <SignIn onNavigateToSignUp={() => setAuthView('signup')} />
+        ) : (
+          <SignUp 
+            onNavigateToSignIn={() => setAuthView('signin')} 
+            onSignUpSuccess={() => setAuthView('signin')} 
+          />
+        )}
+        <OtpModal />
+      </>
+    );
+  }
 
   const renderContent = () => {
     switch (activeTab) {
@@ -33,6 +54,7 @@ function MainApp() {
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
         Dayflow HR, Attendance & Payroll System &copy; {new Date().getFullYear()}
       </footer>
+      <OtpModal />
     </div>
   );
 }

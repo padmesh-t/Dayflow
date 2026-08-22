@@ -7,8 +7,21 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node modules & build artifacts
 node_modules
 dist
 dist-isolation
+
+# Database & Uploads
+*.db
+*.db-journal
+server/*.db
+server/*.db-journal
+uploads
+server/uploads
+
+# Environment & OS
+.env
+.env.local
 .DS_Store
-*.local
+Thumbs.db
