@@ -51,7 +51,9 @@ export function verifyToken(token) {
     .replace(/\+/g, '-')
     .replace(/\//g, '_');
 
-  if (s !== expectedSig) return null;
+  const a = Buffer.from(expectedSig);
+  const b = Buffer.from(s);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
 
   let payload;
   try {
