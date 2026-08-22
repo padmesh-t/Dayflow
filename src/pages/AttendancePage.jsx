@@ -98,7 +98,13 @@ export default function AttendancePage() {
     if (dayOfWeek !== 0 && dayOfWeek !== 6) totalWorkingDays++;
   }
   const presentDays = myMonthLogs.filter(a => a.check_in).length;
-  const leavesCount = Math.max(0, totalWorkingDays - presentDays);
+  
+  // Count approved leaves in the selected month
+  const approvedMonthLeaves = (timeOffRequests || []).filter(r => 
+    (r.employee_id === currentUser?.id || r.empId === currentUser?.id) &&
+    (r.status === 'Validated' || r.status === 'Approved') &&
+    ((r.start_date || '').startsWith(monthPrefix) || (r.end_date || '').startsWith(monthPrefix))
+  ).reduce((acc, curr) => acc + (curr.allocation_days || 1), 0);
 
   // Build Calendar Days array for grid
   const firstDayOfMonth = new Date(currentYear, currentMonthIndex, 1).getDay(); // 0 = Sunday, 1 = Monday
@@ -168,7 +174,7 @@ export default function AttendancePage() {
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Count of Days Present</span>
-            <p className="text-2xl font-extrabold text-slate-900">{presentDays > 0 ? presentDays : 22} Days</p>
+            <p className="text-2xl font-extrabold text-slate-900">{presentDays} Days</p>
           </div>
         </div>
 
@@ -178,7 +184,7 @@ export default function AttendancePage() {
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Leaves Count</span>
-            <p className="text-2xl font-extrabold text-slate-900">{leavesCount} Days</p>
+            <p className="text-2xl font-extrabold text-slate-900">{approvedMonthLeaves} Days</p>
           </div>
         </div>
 
