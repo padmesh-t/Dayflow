@@ -21,6 +21,12 @@ four-digit `MAJOR.MINOR.PATCH.MICRO` version.
   `emp_code` are generated correctly.
 - Employee-role users can only read their own attendance and time-off records;
   admins and HR see company-wide data.
+- Frontend no longer falls back to the bundled mock dataset (which contained
+  cross-company placeholder employees) when an API list returns empty.
+  `DataContext` now starts empty and always uses the authenticated company's data,
+  so the Attendance and Time-Off pages can never show another company's people.
+- Attendance page defaults its date filter to today so company-wide logs are
+  visible immediately.
 
 ### Added
 - Signed JWT auth tokens issued on sign-in (`verify-otp`) and company sign-up,

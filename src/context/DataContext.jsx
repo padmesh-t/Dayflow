@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { initialEmployees, initialAttendance, initialTimeOff } from '../data/mockData';
 import { useAuth } from './AuthContext';
 
 const DataContext = createContext();
@@ -8,9 +7,12 @@ const API_BASE = 'http://localhost:5000/api';
 
 export function DataProvider({ children }) {
   const { authHeaders, currentUser } = useAuth();
-  const [employees, setEmployees] = useState(initialEmployees);
-  const [attendance, setAttendance] = useState(initialAttendance);
-  const [timeOffRequests, setTimeOffRequests] = useState(initialTimeOff);
+  // Start empty. Authenticated users must only ever see data returned by the
+  // API for their own company — never the bundled mock dataset, which contains
+  // cross-company placeholder employees.
+  const [employees, setEmployees] = useState([]);
+  const [attendance, setAttendance] = useState([]);
+  const [timeOffRequests, setTimeOffRequests] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const fetchEmployees = async () => {
@@ -18,10 +20,10 @@ export function DataProvider({ children }) {
       const res = await fetch(`${API_BASE}/employees`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
-        if (data.length > 0) setEmployees(data);
+        setEmployees(data);
       }
     } catch (err) {
-      console.warn('API offline, using fallback state:', err.message);
+      console.warn('Employees API error:', err.message);
     }
   };
 
@@ -30,7 +32,7 @@ export function DataProvider({ children }) {
       const res = await fetch(`${API_BASE}/attendance/logs`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
-        if (data.length > 0) setAttendance(data);
+        setAttendance(data);
       }
     } catch (err) {
       console.warn('Attendance API error:', err.message);
@@ -42,7 +44,7 @@ export function DataProvider({ children }) {
       const res = await fetch(`${API_BASE}/timeoff`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
-        if (data.length > 0) setTimeOffRequests(data);
+        setTimeOffRequests(data);
       }
     } catch (err) {
       console.warn('TimeOff API error:', err.message);
